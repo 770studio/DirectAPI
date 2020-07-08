@@ -25,6 +25,20 @@ class YDAPI
 
     }
 
+
+    static function runAdKiller() {
+
+        //dd( $jsonDecoded->result->KeywordBids);
+
+        $n = new self;
+        $n->process( $jsonDecoded);
+
+
+    }
+
+
+
+
     function process( & $jsonDecoded) {
 
         foreach($jsonDecoded->result->KeywordBids as $ad) {
@@ -121,6 +135,64 @@ class YDAPI
                             'Limit' => 1000,
                             'Offset' => 0,
                         ),
+                ),
+        );
+
+    }
+
+    function getDenial() {
+        return array (
+            'params' =>
+                array (
+                    'SelectionCriteria' =>
+                        array (
+                            'Filter' =>
+                                array (
+                                    0 =>
+                                        array (
+                                            'Field' => 'BounceRate',
+                                            'Operator' => 'GREATER_THAN',
+                                            'Values' =>
+                                                array (
+                                                    0 => '80',
+                                                ),
+                                        ),
+                                    1 =>
+                                        array (
+                                            'Field' => 'Conversions',
+                                            'Operator' => 'LESS_THAN',
+                                            'Values' =>
+                                                array (
+                                                    0 => '1',
+                                                ),
+                                        ),
+                                    2 =>
+                                        array (
+                                            'Field' => 'Impressions',
+                                            'Operator' => 'GREATER_THAN',
+                                            'Values' =>
+                                                array (
+                                                    0 => '20',
+                                                ),
+                                        ),
+                                ),
+                        ),
+                    'FieldNames' =>
+                        array (
+                            0 => 'AdGroupId',
+                            1 => 'Impressions',
+                            2 => 'CampaignId',
+                            3 => 'Clicks',
+                            4 => 'Cost',
+                            5 => 'BounceRate',
+                            6 => 'Conversions',
+                        ),
+                    'ReportName' => 'BounceRate80+Conversions0+20Impressions+LAST_30_DAYS',
+                    'ReportType' => 'ADGROUP_PERFORMANCE_REPORT',
+                    'Format' => 'TSV',
+                    'IncludeVAT' => 'YES',
+                    'IncludeDiscount' => 'YES',
+                    'DateRangeType' => 'LAST_30_DAYS',
                 ),
         );
 
