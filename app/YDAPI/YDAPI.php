@@ -20,13 +20,13 @@ class YDAPI
         //dd( $jsonDecoded->result->KeywordBids);
 
        $n = new self;
-       $n->process( $jsonDecoded);
+       $n->handleKeywordBids( $jsonDecoded);
 
 
     }
 
 
-    static function runAdKiller() {
+    static function AdCleaning() {
 
         //dd( $jsonDecoded->result->KeywordBids);
 
@@ -39,26 +39,44 @@ class YDAPI
 
 
 
-    function process( & $jsonDecoded) {
+    function handleKeywordBids( & $jsonDecoded) {
 
         foreach($jsonDecoded->result->KeywordBids as $ad) {
-            // dd($ad);
+              // dd($ad);
 
             try {
+                $CampaignId = $ad->CampaignId;
                 $AdGroupId = $ad->AdGroupId;
                 $KeywordId = $ad->KeywordId;
                 $ServingStatus = $ad->ServingStatus;
-
-                if($ServingStatus == 'RARELY_SERVED') continue;
                 $StrategyPriority = $ad->StrategyPriority;
-                $Bid = $ad->Search->Bid;
                 $Search = $ad->Search;
+                $Bid = $Search->Bid;
+
+
+
+                $newKb = [
+                    'CampaignId' =>  $CampaignId,
+                    'AdGroupId' =>  $AdGroupId,
+                    'KeywordId' =>  $KeywordId,
+                    'ServingStatus' => $ServingStatus,
+                    'StrategyPriority' => $StrategyPriority,
+                    'TrafficVolume' => $this->TrafficVolume,
+                    'Bid' => $Bid,
+                ];
+
+
+
+
+                if($ServingStatus == 'RARELY_SERVED') {
+                    KeywordBid::create($newKb);
+                    continue;
+                }
 
 
 
                 $BidItems = collect($Search->AuctionBids->AuctionBidItems );
                 $BidItem = $BidItems->where('TrafficVolume', $this->TrafficVolume)->first();
-                $Price = $BidItem->Price;
                 $Price = $BidItem->Price;
                 $maxBid = $BidItem->Bid ;
                // dd($maxBid, $BidItems->where('TrafficVolume', 5)->first());
@@ -68,6 +86,13 @@ class YDAPI
                     dump('----------------' . $Price . '-------------------');
                     dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid);
                     dump("СТАВКА НЕОПРАВДАНО ВЫСОКАЯ:", $Bid, "против:" , $maxBid);
+                    $this->getDown($myBid, $CampaignId, $KeywordId);
+                    KeywordBid::create(array_merge($newKb, [
+                        'AuctionBid' => $maxBid,
+                        'AuctionPrice' => $Price,
+                        'action' => 'down',
+                        'newBid' => $myBid
+                    ]));
                 }
                 elseif( $Bid < $this->averageBid  )  {
                     // ставка не выше чем нужно, но меньше средней, т.е ситуацмя , когда
@@ -78,7 +103,14 @@ class YDAPI
                     dump('-----------------------------------');
                     dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid);
                     dump("СТАВКА НЕ ВЫШЕ МАКС но и НЕ ВЫШЕ СРЕДНЕЙ, СДЕЛАТЬ СТАВКУ СРЕДНЕй?:", $Bid, "против:" , $this->averageBid);
+                    $this->getUp($myBid, $CampaignId, $KeywordId);
 
+                    KeywordBid::create(array_merge($newKb, [
+                        'AuctionBid' => $maxBid,
+                        'AuctionPrice' => $Price,
+                        'action' => 'up',
+                        'newBid' => $myBid
+                    ]));
                 }
 
 
