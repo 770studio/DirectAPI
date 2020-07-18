@@ -15,4 +15,9 @@ class Account extends Model
         return $this->belongsTo('App\User' );
     }
 
+
+    public function Campaigns()
+    {
+        return $this->hasMany('App\YDAPI\Campaigns' );
+    }
 }

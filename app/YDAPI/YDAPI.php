@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class YDAPI
 {
 
-    public $averageBid = 30;
+
     public $TrafficVolume = 5;
     public $min_delta = 2000000; // 2 руб
     private $keywords_update = [];
@@ -62,10 +62,11 @@ class YDAPI
 
         Log::channel('chrono')->info('Запуск UpdateKeywordBids, account:' . $account->id );
 
-        $cIds = explode(',', $account->CampaignIds);
-        if(!$cIds) throw new Exception('no CampaignIds');
+        // $cIds = json_decode( $account->CampaignIds ) ; //explode(',', $account->CampaignIds);
 
-
+        // dd(5555, $account->Campaigns->count() ); // keyBy('compaign_id')->all()
+         $cIds = $account->Campaigns->pluck('campaign_id');
+         if(!$cIds) throw new Exception('no CampaignIds');
 
 
 
@@ -78,7 +79,9 @@ class YDAPI
         $bids =   APIRequest::getKeywordBids($cIds )  ;
         Log::channel('chrono')->info('получили ставки');
 
-        $n->handleKeywordBids( $bids);
+
+
+        $n->handleKeywordBids( $bids, $account);
         Log::channel('chrono')->info('обработали ставки');
 
 
@@ -104,10 +107,11 @@ class YDAPI
 
 */
 
-    function handleKeywordBids( & $bids) {
+    function handleKeywordBids( & $bids, & $account) {
 
         foreach($bids->result->KeywordBids as $ad) {
               // dd($ad);
+
 
             try {
                 $CampaignId = $ad->CampaignId;
@@ -118,7 +122,8 @@ class YDAPI
                 $Search = $ad->Search;
                 $Bid = $Search->Bid;
 
-
+                $avg_bid =  1000000 * (int)$account->Campaigns->where('campaign_id',  $CampaignId )->first()->avg_bid ;
+                if(!$avg_bid)  throw new Exception('Нулевая средняя ставка');
 
                 $newKb = [
                     'CampaignId' =>  $CampaignId,
@@ -159,15 +164,15 @@ class YDAPI
                         'newBid' => $myBid
                     ]));
                 }
-                elseif( $Bid < $this->averageBid  )  {
+                elseif( $Bid < $avg_bid )  {
                     // ставка не выше чем нужно, но меньше средней, т.е ситуацмя , когда
                     // мы снижали ставку (когда она была слишком высокая), а теперь она не слишком высока уже
                     // т.е можно приподнять до средней, если средняя не больше максимальной, если больше, то до максимальной (перебить ставку)
-                    $myBid = $this->averageBid > $maxBid ? $maxBid + $this->min_delta  : $this->averageBid ;
+                    $myBid = $avg_bid > $maxBid ? $maxBid + $this->min_delta  : $avg_bid;
 
                     dump('-----------------------------------');
                     dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid);
-                    dump("СТАВКА НЕ ВЫШЕ МАКС но и НЕ ВЫШЕ СРЕДНЕЙ, СДЕЛАТЬ СТАВКУ СРЕДНЕй?:", $Bid, "против:" , $this->averageBid);
+                    dump("СТАВКА НЕ ВЫШЕ МАКС но при это НИЖЕ СРЕДНЕЙ, СДЕЛАТЬ СТАВКУ СРЕДНЕй?:", $Bid, "против:" , $avg_bid);
                     $this->getUp($myBid,  $KeywordId);
 
                     KeywordBid::create(array_merge($newKb, [

@@ -50,7 +50,7 @@ class AdsClean extends Command
 
         try{
             $accId = (int)$this->argument('account_id');
-            $account = Account::find($accId);
+            $account = Account::with("Campaigns")->find($accId);
             Auth::loginUsingId($account->user_id );
 
             YDAPI::AdsCleaning( $account );
