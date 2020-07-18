@@ -65,6 +65,8 @@ class APIRequest
 
 
     static function updateKeywordBid( & $keywords  ) {
+
+        if(!$keywords) return;
         $data = [ "method"=> "set",
                      "params" => [
                         "KeywordBids" => $keywords

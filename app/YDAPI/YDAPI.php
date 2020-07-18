@@ -200,8 +200,13 @@ class YDAPI
 
             Log::channel('chrono')->info('апдейт ставок , всего в массве: ' . count($this->keywords_update) );
 
-            $r =   APIRequest::updateKeywordBid( $this->keywords_update );
-            dump( $r ); // обновленные ставки
+            if(count($this->keywords_update))  {
+                $r =   APIRequest::updateKeywordBid( $this->keywords_update );
+                dump( $r ); // обновленные ставки
+            }
+            else  Log::channel('chrono')->info('масив пустой , апдейт не требуется '  );
+
+
 
         } catch (Exception $e) {
             dump($e->getMessage() );
@@ -209,7 +214,7 @@ class YDAPI
 
         }
 
-        Log::channel('chrono')->info('апдейт ставок прошел');
+        Log::channel('chrono')->info('апдейт ставок завершен');
 
 
 
