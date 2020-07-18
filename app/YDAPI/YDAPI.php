@@ -4,7 +4,9 @@ namespace App\YDAPI;
 
 
 
+
 use  Exception;
+use Illuminate\Support\Facades\Log;
 
 class YDAPI
 {
@@ -12,36 +14,99 @@ class YDAPI
     public $averageBid = 30;
     public $TrafficVolume = 5;
     public $min_delta = 2000000; // 2 руб
+    private $keywords_update = [];
 
     //
-   static function run() {
-       $json = file_get_contents('r.json');
-       $jsonDecoded = json_decode($json);
-        //dd( $jsonDecoded->result->KeywordBids);
 
-       $n = new self;
-       $n->handleKeywordBids( $jsonDecoded);
+
+    public function __construct( & $account)
+    {
+
+        APIRequest::setAccount( $account );
+
+    }
+
+    static function run( $accId ) {
+
 
 
     }
 
 
-    static function AdCleaning() {
+    static function AdsCleaning( $accId) {
 
+
+        APIRequest::$check_units = false; // за отчеты баллы не списывают
+
+       $account = Account::find($accId);
+        if(!$account) throw new Exception('no such an account');
+
+        Log::channel('chrono')->info('Запуск AdCleaning, account:' . $accId );
+
+        $n = new self ( $account);
+
+        $ads  = APIRequest::FindBadAds();
+        Log::channel('chrono')->info('Получили adIds'   );
+        APIRequest::SuspendAd( $ads );
+        Log::channel('chrono')->info('Закончили AdCleaning'   );
+
+
+
+
+
+    }
+    static function UpdateKeywordBids( $accId ) {
+
+        $account = Account::find($accId);
+        if(!$account) throw new Exception('no such an account');
+
+        Log::channel('chrono')->info('Запуск UpdateKeywordBids, account:' . $accId );
+
+        $cIds = explode(',', $account->CampaignIds);
+        if(!$cIds) throw new Exception('no CampaignIds');
+
+
+
+
+
+        //$json = file_get_contents('r.json');
+        //$jsonDecoded = json_decode($json);
         //dd( $jsonDecoded->result->KeywordBids);
 
-        $n = new self;
-        $n->process( $jsonDecoded);
+        $n = new self ( $account ) ;
+
+        $bids =   APIRequest::getKeywordBids($cIds )  ;
+        Log::channel('chrono')->info('получили ставки');
+
+        $n->handleKeywordBids( $bids);
+        Log::channel('chrono')->info('обработали ставки');
+
 
 
     }
 
+    function getUp($myBid,  $KeywordId) {
+        $this->setKeywordBid($myBid, $KeywordId);
+    }
+    function getDown($myBid,  $KeywordId) {
+        $this->setKeywordBid($myBid, $KeywordId);
+    }
+    function setKeywordBid($myBid, $KeywordId) {
+        $this->keywords_update[] = ["KeywordId" => $KeywordId, "SearchBid"=> $myBid ]  ;
 
+    }
 
+    /*
+кампаний — не более 10;
+групп — не более 1000;
+ключевых фраз и автотаргетингов — не более 10 000.
+         * TODO как проверить ?
 
-    function handleKeywordBids( & $jsonDecoded) {
+*/
 
-        foreach($jsonDecoded->result->KeywordBids as $ad) {
+    function handleKeywordBids( & $bids) {
+
+        foreach($bids->result->KeywordBids as $ad) {
               // dd($ad);
 
             try {
@@ -86,7 +151,7 @@ class YDAPI
                     dump('----------------' . $Price . '-------------------');
                     dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid);
                     dump("СТАВКА НЕОПРАВДАНО ВЫСОКАЯ:", $Bid, "против:" , $maxBid);
-                    $this->getDown($myBid, $CampaignId, $KeywordId);
+                    $this->getDown($myBid, $KeywordId);
                     KeywordBid::create(array_merge($newKb, [
                         'AuctionBid' => $maxBid,
                         'AuctionPrice' => $Price,
@@ -103,7 +168,7 @@ class YDAPI
                     dump('-----------------------------------');
                     dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid);
                     dump("СТАВКА НЕ ВЫШЕ МАКС но и НЕ ВЫШЕ СРЕДНЕЙ, СДЕЛАТЬ СТАВКУ СРЕДНЕй?:", $Bid, "против:" , $this->averageBid);
-                    $this->getUp($myBid, $CampaignId, $KeywordId);
+                    $this->getUp($myBid,  $KeywordId);
 
                     KeywordBid::create(array_merge($newKb, [
                         'AuctionBid' => $maxBid,
@@ -115,118 +180,40 @@ class YDAPI
 
 
             } catch (Exception $e) {
-                dump($e->getMessage() );
-                dump($Search );
+                 dump($e->getMessage() );
+                // dump($Search );
+                Log::channel('chrono')->info( $e->getMessage() );
+
                 continue;
             }
 
 
+
+
+
+
         }
 
-    }
+        Log::channel('chrono')->info('обработали массив ставок');
 
-    function getBids() {
+        try {
 
-        $body = array (
-            'method' => 'get',
-            'params' =>
-                array (
-                    'SelectionCriteria' =>
-                        array (
-                            'CampaignIds' =>
-                                array (
-                                    0 => 51359047,
-                                ),
-                            'AdGroupIds' =>
-                                array (
-                                ),
-                            'KeywordIds' =>
-                                array (
-                                ),
-                            'ServingStatuses' =>
-                                array (
-                                ),
-                        ),
-                    'FieldNames' =>
-                        array (
-                            0 => 'AdGroupId',
-                            1 => 'KeywordId',
-                            2 => 'ServingStatus',
-                            3 => 'StrategyPriority',
-                        ),
-                    'SearchFieldNames' =>
-                        array (
-                            0 => 'Bid',
-                            1 => 'AuctionBids',
-                        ),
-                    'NetworkFieldNames' =>
-                        array (
-                        ),
-                    'Page' =>
-                        array (
-                            'Limit' => 1000,
-                            'Offset' => 0,
-                        ),
-                ),
-        );
+            Log::channel('chrono')->info('апдейт ставок , всего в массве: ' . count($this->keywords_update) );
+
+            $r =   APIRequest::updateKeywordBid( $this->keywords_update );
+            dump( $r ); // обновленные ставки
+
+        } catch (Exception $e) {
+            dump($e->getMessage() );
+             Log::channel('chrono')->info('апдейт ставок завершен неудачей.');
+
+        }
+
+        Log::channel('chrono')->info('апдейт ставок прошел');
+
+
 
     }
 
-    function getDenial() {
-        return array (
-            'params' =>
-                array (
-                    'SelectionCriteria' =>
-                        array (
-                            'Filter' =>
-                                array (
-                                    0 =>
-                                        array (
-                                            'Field' => 'BounceRate',
-                                            'Operator' => 'GREATER_THAN',
-                                            'Values' =>
-                                                array (
-                                                    0 => '80',
-                                                ),
-                                        ),
-                                    1 =>
-                                        array (
-                                            'Field' => 'Conversions',
-                                            'Operator' => 'LESS_THAN',
-                                            'Values' =>
-                                                array (
-                                                    0 => '1',
-                                                ),
-                                        ),
-                                    2 =>
-                                        array (
-                                            'Field' => 'Impressions',
-                                            'Operator' => 'GREATER_THAN',
-                                            'Values' =>
-                                                array (
-                                                    0 => '20',
-                                                ),
-                                        ),
-                                ),
-                        ),
-                    'FieldNames' =>
-                        array (
-                            0 => 'AdGroupId',
-                            1 => 'Impressions',
-                            2 => 'CampaignId',
-                            3 => 'Clicks',
-                            4 => 'Cost',
-                            5 => 'BounceRate',
-                            6 => 'Conversions',
-                        ),
-                    'ReportName' => 'BounceRate80+Conversions0+20Impressions+LAST_30_DAYS',
-                    'ReportType' => 'ADGROUP_PERFORMANCE_REPORT',
-                    'Format' => 'TSV',
-                    'IncludeVAT' => 'YES',
-                    'IncludeDiscount' => 'YES',
-                    'DateRangeType' => 'LAST_30_DAYS',
-                ),
-        );
 
-    }
 }

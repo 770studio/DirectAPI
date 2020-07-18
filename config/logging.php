@@ -39,12 +39,13 @@ return [
             'driver' => 'stack',
             'channels' => ['single'],
             'ignore_exceptions' => false,
-        ],
+         ],
 
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => 'debug',
+
         ],
 
         'daily' => [
@@ -52,6 +53,17 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => 'debug',
             'days' => 14,
+            'tap' => [App\Logging\CustomFilenames::class],
+
+        ],
+
+        'chrono' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/chrono.log'),
+            'level' => 'debug',
+            'days' => 14,
+            'tap' => [App\Logging\CustomFilenames::class],
+
         ],
 
         'slack' => [

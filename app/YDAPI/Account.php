@@ -4,10 +4,8 @@ namespace App\YDAPI;
 
 use Illuminate\Database\Eloquent\Model;
 
-class KeywordBid extends Model
+class Account extends Model
 {
-
-    protected $guarded = [];
-
+    public $timestamps = false;
     //
 }
