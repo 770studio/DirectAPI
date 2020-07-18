@@ -22,7 +22,8 @@ class CustomFilenames
 
                //  $user_path = Storage::path( Auth::user()->id );
                 // Storage::makeDirectory( $user_path  );
-                  $handler->setFilenameFormat(   Auth::user()->id ."-userlog-{date}", 'Y-m-d');
+                 $id = Auth::user() ? Auth::user()->id : 0;
+                  $handler->setFilenameFormat(   $id ."-userlog-{date}", 'Y-m-d');
 
                 // dd(7777, 45555);
 

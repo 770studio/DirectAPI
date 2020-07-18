@@ -52,7 +52,7 @@ class BidsUpdate extends Command
             dump($e->getMessage() );
             dump($e->getFile() , $e->getLine());
             dump($e->getTrace() );
-            Log::error( $e->getMessage() );
+            Log::channel('daily')->error( $e->getMessage() );
         }
 
 
