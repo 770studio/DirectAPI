@@ -41,7 +41,7 @@ class YDAPI
 
 
 
-        Log::channel('chrono')->info('Запуск AdCleaning, account:' . $accId );
+        Log::channel('chrono')->info('Запуск AdCleaning, account:' . $account->id );
 
         $n = new self ( $account);
 
@@ -60,7 +60,7 @@ class YDAPI
 
         if(!$account) throw new Exception('no such an account');
 
-        Log::channel('chrono')->info('Запуск UpdateKeywordBids, account:' . $accId );
+        Log::channel('chrono')->info('Запуск UpdateKeywordBids, account:' . $account->id );
 
         $cIds = explode(',', $account->CampaignIds);
         if(!$cIds) throw new Exception('no CampaignIds');
