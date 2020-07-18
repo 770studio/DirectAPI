@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\YDAPI;
 
+use App\YDAPI\Account;
 use App\YDAPI\YDAPI;
 use Exception;
 use Illuminate\Console\Command;
@@ -42,19 +43,17 @@ class AdsClean extends Command
     public function handle( )
     {
 
-        Auth::loginUsingId(10);
-        //Auth::guard('Leila')->login($user);
-
-        //dump(Auth::user()->accounts );
-        Log::channel('daily')->error( "test5555" );
 
 
-        exit;
+
 
 
         try{
             $accId = (int)$this->argument('account_id');
-            YDAPI::AdsCleaning( $accId );
+            $account = Account::find($accId);
+            Auth::loginUsingId($account->user_id );
+
+            YDAPI::AdsCleaning( $account );
         } catch(Exception $e) {
 
             dump($e->getMessage() );

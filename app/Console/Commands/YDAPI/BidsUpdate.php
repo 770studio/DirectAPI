@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands\YDAPI;
 
+use App\YDAPI\Account;
 use App\YDAPI\YDAPI;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class BidsUpdate extends Command
@@ -41,8 +43,9 @@ class BidsUpdate extends Command
     public function handle( )
     {
         try{
-
             $accId = (int)$this->argument('account_id');
+            $account = Account::find($accId);
+            Auth::loginUsingId($account->user_id );
             YDAPI::UpdateKeywordBids( $accId );
         } catch(Exception $e) {
 

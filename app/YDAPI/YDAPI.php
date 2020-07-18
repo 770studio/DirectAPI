@@ -33,13 +33,13 @@ class YDAPI
     }
 
 
-    static function AdsCleaning( $accId) {
-
-
+    static function AdsCleaning( & $account ) {
         APIRequest::$check_units = false; // за отчеты баллы не списывают
 
-       $account = Account::find($accId);
         if(!$account) throw new Exception('no such an account');
+
+
+
 
         Log::channel('chrono')->info('Запуск AdCleaning, account:' . $accId );
 
@@ -55,9 +55,9 @@ class YDAPI
 
 
     }
-    static function UpdateKeywordBids( $accId ) {
+    static function UpdateKeywordBids( & $account ) {
 
-        $account = Account::find($accId);
+
         if(!$account) throw new Exception('no such an account');
 
         Log::channel('chrono')->info('Запуск UpdateKeywordBids, account:' . $accId );
