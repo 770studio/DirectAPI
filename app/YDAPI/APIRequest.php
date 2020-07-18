@@ -7,6 +7,7 @@ namespace App\YDAPI;
 use Carbon\Carbon;
 use  Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class APIRequest
 {
@@ -109,7 +110,11 @@ class APIRequest
                 throw new Exception('Невозможно получть баллы');
 
         // на запрос надо 15 баллов TODO уточнить и расширить
-        if($matches[2] < 15 ) self::takeAbreak( );
+        if($matches[2] < 15 ) {
+            if( self::takeAbreak( ))
+                Log::channel('chrono')->info('баллы закончились, пауза на час'  );
+
+        }
 
 
 
