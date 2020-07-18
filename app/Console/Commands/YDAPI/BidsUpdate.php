@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-class BidsUpdateCommand extends Command
+class BidsUpdate extends Command
 {
     /**
      * The name and signature of the console command.
@@ -52,7 +52,7 @@ class BidsUpdateCommand extends Command
             dump($e->getMessage() );
             dump($e->getFile() , $e->getLine());
             dump($e->getTrace() );
-            Log::channel('daily')->error( $e->getMessage() );
+            Log::channel('daily')->error($e->getLine() . ' | ' . $e->getFile() . ' | ' . $e->getMessage() );
         }
 
 

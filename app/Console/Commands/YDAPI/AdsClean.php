@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-class AdsCleanCommand extends Command
+class AdsClean extends Command
 {
     /**
      * The name and signature of the console command.
@@ -59,7 +59,7 @@ class AdsCleanCommand extends Command
             dump($e->getMessage() );
             dump($e->getFile() , $e->getLine());
            // dump($e->getTrace() );
-            Log::channel('daily')->error( $e->getMessage() );
+            Log::channel('daily')->error($e->getLine() . ' | ' . $e->getFile() . ' | ' . $e->getMessage() );
         }
 
 
