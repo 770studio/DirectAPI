@@ -25,7 +25,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-      $schedule->command('ipoteka_files:delete')->dailyAt('12:45')->runInBackground();
+        $schedule->command('ads:clean 1')->twiceDaily(4, 6)->runInBackground(); // avtopark116.ru
+        $schedule->command('bids:update 1')->everyFiveMinutes()->runInBackground(); // avtopark116.ru
 
 
 
