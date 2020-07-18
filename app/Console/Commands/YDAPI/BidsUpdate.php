@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-class BidsUpdate extends Command
+class BidsUpdateCommand extends Command
 {
     /**
      * The name and signature of the console command.
@@ -46,7 +46,7 @@ class BidsUpdate extends Command
             $accId = (int)$this->argument('account_id');
             $account = Account::find($accId);
             Auth::loginUsingId($account->user_id );
-            YDAPI::UpdateKeywordBids( $accId );
+            YDAPI::UpdateKeywordBids( $account );
         } catch(Exception $e) {
 
             dump($e->getMessage() );

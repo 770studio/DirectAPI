@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-class AdsClean extends Command
+class AdsCleanCommand extends Command
 {
     /**
      * The name and signature of the console command.
