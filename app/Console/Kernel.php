@@ -25,9 +25,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // runInBackground почему то не работает, скрипт падает в самом начале
-        $schedule->command('ads:clean 1')->twiceDaily(4, 6); // ->runInBackground(); // avtopark116.ru
-        $schedule->command('bids:update 1')->everyFiveMinutes()->withoutOverlapping() ; // avtopark116.ru
-
+        $schedule->command('ads:clean 1')->weekdays()->twiceDaily(4, 6); // ->runInBackground(); // avtopark116.ru
+        $schedule->command('bids:update 1')->weekdays()->everyFiveMinutes()->withoutOverlapping() ; // avtopark116.ru
+        #TODO быстрая постановка в очередь, нужен redis
 
 
     }
