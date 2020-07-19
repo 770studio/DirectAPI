@@ -264,11 +264,13 @@ class APIRequest
             ->post($url)
             ->throw();  // TODO обработка ошибок "{"error":{"error_detail":"JSON can't be processed","error_string":"Invalid request","request_id":"1264458033037596430","error_code":"8000"}}"
 
-/*        dd(
+        Log::channel('chrono')->info('запрос выполнен: ' . $url  );
 
-            $response->headers(),
-            $response->body()
-        );*/
+        /*        dd(
+
+                    $response->headers(),
+                    $response->body()
+                );*/
 
         self::Checkin($response );
 

@@ -24,9 +24,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
-        $schedule->command('ads:clean 1')->twiceDaily(4, 6)->runInBackground(); // avtopark116.ru
-        $schedule->command('bids:update 1')->everyFiveMinutes()->runInBackground(); // avtopark116.ru
+        // runInBackground почему то не работает, скрипт падает в самом начале
+        $schedule->command('ads:clean 1')->twiceDaily(4, 6); // ->runInBackground(); // avtopark116.ru
+        $schedule->command('bids:update 1')->everyFiveMinutes()->withoutOverlapping() ; // avtopark116.ru
 
 
 
