@@ -143,9 +143,37 @@ class YDAPI
                     continue;
                 }
 
+                //TODO  TODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODO
+                //  стратегии
+
+     /*
+                1. Заплатить минимум за минимум трафика. Исследование рынка. Проверка бюджета.
+                   Претендуем на самый дешевый пакет трафика, это будут видимо нижние позиции в выдаче, которыу могут
+                   обеспечить какой-то трафик, при этом ставка всегда минимальна.
+
+                    Выбранная макс ставка на рк.
+                    Соотвественно ставка не может быть выше выбранной, т.е нужно идти
+                    вверх по объему трафика и выбрать тот объем (занять позицию на поиске) , который позвояет макс. ставка
+
+                2. Заплатить максимум (не не более определенного значения) и взять трафика столько, сколько позволит
+                    макс. уровень ставки , определяемый для каждой рк.
+
+                 Выбранный объем трафика. При этом ставка сама по себе не ограничена, ограничения будут на уровне
+                рк (дневные ограничения), при этом неплохо бы проверить , что органичение сработало, чтобы приостановить
+                дальнейшее бессмысленное выполнение
+
+
+                 3.
+
+
+                */
 
 
                 $BidItems = collect($Search->AuctionBids->AuctionBidItems );
+
+               // $bids->where('Bid', '<', 950000000)->max('TrafficVolume')
+
+
                 $BidItem = $BidItems->where('TrafficVolume', $this->TrafficVolume)->first();
                 $Price = $BidItem->Price;
                 $maxBid = $BidItem->Bid ;
@@ -154,8 +182,8 @@ class YDAPI
                     // наша ставка больше , чем максимальная
                     $myBid = $maxBid + $this->min_delta;
                     dump('----------------' . $Price . '-------------------');
-                    dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid);
-                    dump("СТАВКА НЕОПРАВДАНО ВЫСОКАЯ:", $Bid, "против:" , $maxBid);
+                    dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid, $this->TrafficVolume);
+                    dump("СТАВКА НЕОПРАВДАНО ВЫСОКАЯ:", $Bid, "против:" , $maxBid, "для кол-во трафа:" , $this->TrafficVolume);
                     $this->getDown($myBid, $KeywordId);
                     KeywordBid::create(array_merge($newKb, [
                         'AuctionBid' => $maxBid,
