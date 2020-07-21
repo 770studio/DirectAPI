@@ -12,7 +12,7 @@ class YDAPI
 {
 
 
-    public $TrafficVolume = 5;
+    public $TrafficVolume = 10;
     public $min_delta = 2000000; // 2 руб
     private $keywords_update = [];
 
