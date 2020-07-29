@@ -12,7 +12,7 @@ class YDAPI
 {
 
 
-    public $TrafficVolume = 10;
+    public $TrafficVolume = 10; // TODO тянуть из бд
     public $min_delta = 2000000; // 2 руб
     private $keywords_update = [];
 
@@ -75,6 +75,8 @@ class YDAPI
         //dd( $jsonDecoded->result->KeywordBids);
 
         $n = new self ( $account ) ;
+
+        if($account->TrafficVolume) $n->TrafficVolume = $account->TrafficVolume;
 
         $bids =   APIRequest::getKeywordBids($cIds )  ;
         Log::channel('chrono')->info('получили ставки');
