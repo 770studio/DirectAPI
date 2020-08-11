@@ -163,7 +163,7 @@ class APIRequest
         array_pop($data);
         array_pop($data);
 
-dd($data);
+
         return $data;
     }
 

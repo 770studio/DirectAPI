@@ -6,6 +6,7 @@ namespace App\YDAPI;
 
 
 use  Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -17,6 +18,7 @@ class YDAPI
     public $min_delta = 2000000; // 2 руб
     private $keywords_update = [];
     public $account;
+    private $ad_state;
 
     //
 
@@ -88,6 +90,8 @@ class YDAPI
         if($account->TrafficVolume) $n->TrafficVolume = $account->TrafficVolume;
 
         $bids =   APIRequest::getKeywordBids($cIds )  ;
+
+        dd($bids);
         Log::channel('chrono')->info('получили ставки');
 
 
@@ -123,6 +127,7 @@ class YDAPI
         foreach($bids->result->KeywordBids as $ad) {
               // dd($ad);
 
+            $cutDown = $this->adIsUnderCut($ad->KeywordId)   ;
 
             try {
                 $CampaignId = $ad->CampaignId;
@@ -150,7 +155,13 @@ class YDAPI
 
 
                 if($ServingStatus == 'RARELY_SERVED') {
-                    KeywordBid::create($newKb);
+                    //KeywordBid::create($newKb);
+
+                    KeywordBid::updateOrCreate(
+                        ['KeywordId' =>  $KeywordId, 'ServingStatus' => 'RARELY_SERVED'],
+                        $newKb
+                    );
+
                     continue;
                 }
 
@@ -189,7 +200,20 @@ class YDAPI
                 $Price = $BidItem->Price;
                 $maxBid = $BidItem->Bid ;
                // dd($maxBid, $BidItems->where('TrafficVolume', 5)->first());
-                if($Bid >  $maxBid + $this->min_delta  ) {
+
+                if($cutDown) {
+                   // ставка должна быть срезана т.к объявление имеет плохую эффективность (альтернатива остановки )
+                    $myBid = $avg_bid/2;
+                    $this->getDown($myBid, $KeywordId);
+                    KeywordBid::create(array_merge($newKb, [
+                        'AuctionBid' => $maxBid,
+                        'AuctionPrice' => $Price,
+                        'action' => 'cut_down2',
+                        'newBid' => $myBid
+                    ]));
+                }
+
+                elseif($Bid >  $maxBid + $this->min_delta  ) {
                     // наша ставка больше , чем максимальная
                     $myBid = $maxBid + $this->min_delta;
                     dump('----------------' . $Price . '-------------------');
@@ -305,7 +329,7 @@ class YDAPI
                     Log::channel('chrono')->info('Отчет содержит объявления на остановку: suspend'   );
 
                     foreach($report as $ad_id) {
-                        $suspend[] = ['ad_id' => $ad_id, 'suspended' => 1, 'reason_id' => $reason->id ];
+                        $suspend[] = ['ad_id' => $ad_id, 'suspended' => 1, 'reason_id' => $reason->id , 'account_id' => $this->account->id ];
                         $suspendAdIds[] = $ad_id;
                     }
 
@@ -316,8 +340,8 @@ class YDAPI
                     // для того , чтоб зафиксировать cut_down2 , просто добавим или обновим запись в бд
                      foreach($report as $ad_id) {
                             AdsStatus::updateOrCreate(
-                                ['ad_id' => $ad_id ],
-                                ['ad_id' => $ad_id, 'suspended' => 0, 'reason_id' => $reason->id ]
+                                ['ad_id' => $ad_id, 'account_id' => $this->account->id ],
+                                ['ad_id' => $ad_id, 'suspended' => 0, 'reason_id' => $reason->id, 'account_id' => $this->account->id ]
                             );
 
 
@@ -345,7 +369,7 @@ class YDAPI
 
                 foreach ( $suspend as $row ) {
                     AdsStatus::updateOrCreate(
-                        ['ad_id' => $row['ad_id'] ],
+                        ['ad_id' => $row['ad_id'], 'account_id' => $this->account->id ],
                         $row
                     );
                 }
@@ -395,4 +419,34 @@ class YDAPI
 
 
     }
+
+
+
+
+
+
+    function  adIsUnderCut($ad_id) {
+
+        if(!$this->ad_state) {
+            // $this->ad_state = AdsStatus::where('account_id' , $this->account->id)->get();
+            $this->ad_state =   AdsStatus::where('account_id' , $this->account->id)->whereHas('SuspendReason', function ( Builder $query) {
+                $query->where('type',  'cut_down2');
+            })->get();
+
+
+        }
+
+          return (bool)$this->ad_state->where('ad_id', $ad_id)->count();
+    }
+
+
+
+
+
+
+
+
+
+
+
 }
