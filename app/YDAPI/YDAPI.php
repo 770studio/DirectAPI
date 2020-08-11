@@ -220,6 +220,11 @@ class YDAPI
                         'action' => 'cut_down2',
                         'newBid' => $myBid
                     ]));
+
+                    dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid, $this->TrafficVolume);
+                    dump("ставка должна быть срезана т.к объявление имеет плохую эффективность (альтернатива остановки ):", $Bid, "против:" , $maxBid, "для кол-во трафа:" , $this->TrafficVolume);
+
+
                 }
 
                 elseif($Bid >  $maxBid + $this->min_delta  ) {
