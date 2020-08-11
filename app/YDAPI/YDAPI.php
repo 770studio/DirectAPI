@@ -124,7 +124,7 @@ class YDAPI
     function handleKeywordBids( & $bids, & $account) {
 
         foreach($bids->result->KeywordBids as $ad) {
-             dd($ad);
+           //  dd($ad);
 
             $cutDown = $this->adIsUnderCut( $ad->AdGroupId )   ;
 
@@ -213,16 +213,18 @@ class YDAPI
                 $maxBid = $BidItem->Bid ;
                // dd($maxBid, $BidItems->where('TrafficVolume', 5)->first());
 
-                if($cutDown) {
+                if($cutDown && $Bid !=  round($avg_bid/2 ) ) {
                    // ставка должна быть срезана т.к объявление имеет плохую эффективность (альтернатива остановки )
-                    $myBid = $avg_bid/2;
+                    $myBid = round($avg_bid/2 );
                     $this->getDown($myBid, $KeywordId);
-                    KeywordBid::create(array_merge($newKb, [
+                    $k = KeywordBid::create(array_merge($newKb, [
                         'AuctionBid' => $maxBid,
                         'AuctionPrice' => $Price,
                         'action' => 'cut_down2',
                         'newBid' => $myBid
                     ]));
+
+
 
                     dump($AdGroupId, $KeywordId, $ServingStatus, $StrategyPriority, $Bid, $this->TrafficVolume);
                     dump("ставка должна быть срезана т.к объявление имеет плохую эффективность (альтернатива остановки ):", $Bid, "против:" , $maxBid, "для кол-во трафа:" , $this->TrafficVolume);
