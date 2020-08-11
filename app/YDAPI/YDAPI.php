@@ -126,10 +126,10 @@ class YDAPI
         foreach($bids->result->KeywordBids as $ad) {
              dd($ad);
 
-            $cutDown = $this->adIsUnderCut($ad->Id)   ;
+            $cutDown = $this->adIsUnderCut( $ad->AdGroupId )   ;
 
            // if($cutDown)
-            dump($cutDown, $ad->AdGroupId, $ad->KeywordId );
+          //  dump($cutDown, $ad->AdGroupId, $ad->KeywordId );
 
             try {
                 $CampaignId = $ad->CampaignId;
@@ -442,7 +442,7 @@ class YDAPI
 
 
 
-    function  adIsUnderCut($ad_id) {
+    function  adIsUnderCut($adgroup_id) {
 
         if(!$this->ad_state) {
             // $this->ad_state = AdsStatus::where('account_id' , $this->account->id)->get();
@@ -453,7 +453,7 @@ class YDAPI
 
         }
 
-          return (bool)$this->ad_state->where('ad_id', $ad_id)->count();
+          return (bool)$this->ad_state->where('adgroup_id', $adgroup_id)->count();
     }
 
 
