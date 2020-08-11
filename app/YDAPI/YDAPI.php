@@ -196,6 +196,16 @@ class YDAPI
 
 
                 $BidItem = $BidItems->where('TrafficVolume', $this->TrafficVolume)->first();
+
+                $tvolume = $this->TrafficVolume;
+                while(!$BidItem )  {
+                    // если нет цены за данный объем берем меньший
+                    $tvolume = $tvolume- 5 ;
+                    if($tvolume < 5) break;
+                    $BidItem = $BidItems->where('TrafficVolume', $tvolume)->first();
+
+                }
+                if(!$BidItem)  throw new Exception('нет цены за трафик');
                 $Price = $BidItem->Price;
                 $maxBid = $BidItem->Bid ;
                // dd($maxBid, $BidItems->where('TrafficVolume', 5)->first());
@@ -250,7 +260,7 @@ class YDAPI
                  dump($e->getMessage() );
                 // dump($Search );
                 Log::channel('chrono')->info( $e->getMessage() );
-
+//dd($BidItem, $this->TrafficVolume, $BidItems);
                 continue;
             }
 
