@@ -124,9 +124,12 @@ class YDAPI
     function handleKeywordBids( & $bids, & $account) {
 
         foreach($bids->result->KeywordBids as $ad) {
-              // dd($ad);
+             dd($ad);
 
-            $cutDown = $this->adIsUnderCut($ad->KeywordId)   ;
+            $cutDown = $this->adIsUnderCut($ad->Id)   ;
+
+           // if($cutDown)
+            dump($cutDown, $ad->AdGroupId, $ad->KeywordId );
 
             try {
                 $CampaignId = $ad->CampaignId;
@@ -342,8 +345,8 @@ class YDAPI
 
                     Log::channel('chrono')->info('Отчет содержит объявления на остановку: suspend'   );
 
-                    foreach($report as $ad_id) {
-                        $suspend[] = ['ad_id' => $ad_id, 'suspended' => 1, 'reason_id' => $reason->id , 'account_id' => $this->account->id ];
+                    foreach($report as $adGroupId => $ad_id) {
+                        $suspend[] = [  'adgroup_id' => $adGroupId , 'suspended' => 1, 'reason_id' => $reason->id , 'account_id' => $this->account->id ];
                         $suspendAdIds[] = $ad_id;
                     }
 
@@ -352,10 +355,10 @@ class YDAPI
                 case 'cut_down2':
                      Log::channel('chrono')->info('Отчет содержит объявления на понижение ставки: cut_down2'   );
                     // для того , чтоб зафиксировать cut_down2 , просто добавим или обновим запись в бд
-                     foreach($report as $ad_id) {
+                     foreach($report as $adGroupId => $ad_id) {
                             AdsStatus::updateOrCreate(
-                                ['ad_id' => $ad_id, 'account_id' => $this->account->id ],
-                                ['ad_id' => $ad_id, 'suspended' => 0, 'reason_id' => $reason->id, 'account_id' => $this->account->id ]
+                                [  'adgroup_id' => $adGroupId,  'account_id' => $this->account->id ],
+                                [ 'adgroup_id' => $adGroupId, 'suspended' => 0, 'reason_id' => $reason->id, 'account_id' => $this->account->id ]
                             );
 
 
@@ -383,7 +386,7 @@ class YDAPI
 
                 foreach ( $suspend as $row ) {
                     AdsStatus::updateOrCreate(
-                        ['ad_id' => $row['ad_id'], 'account_id' => $this->account->id ],
+                        ['adgroup_id' =>   $row['adgroup_id'], 'account_id' => $this->account->id ],
                         $row
                     );
                 }

@@ -155,14 +155,14 @@ class APIRequest
 
         $data = [];
         $rows = explode( "\n", $response->body());
-        foreach( $rows as  $row) {
-            $data[] = explode( "\t", $row)[0];
-        }
-        array_shift($data);
-        array_shift($data);
-        array_pop($data);
-        array_pop($data);
 
+        foreach( $rows as  $row) {
+            $exp = explode( "\t", $row);
+            $adGr = (int)@$exp[1];
+            if($adGr) $data[$adGr] = @$exp[0];
+
+
+        }
 
         return $data;
     }
@@ -272,7 +272,7 @@ class APIRequest
 
     }
     static function getAdsArray(SuspensionReason $r) {
-        $reportName =  $r->report_name . '_' . $r->DateRangeType . '_' . Carbon::now()->toDateString();
+        $reportName =    $r->report_name . '_' . $r->DateRangeType . '_' . Carbon::now()->toDateString();
 
         $filter =  json_decode($r->report_conditions_json);
         if(!$filter) throw new Exception('report_conditions_json is not parsable');
@@ -287,7 +287,7 @@ class APIRequest
                         ),
                     'FieldNames' =>
                         array (
-                            0 => 'AdId',
+                            0 => 'AdId', 1=>'AdGroupId'
                             /*              1 => 'Impressions',
                                           2 => 'CampaignId',
                                           3 => 'Clicks',
