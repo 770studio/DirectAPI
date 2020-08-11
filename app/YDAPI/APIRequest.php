@@ -144,8 +144,34 @@ class APIRequest
 
         return $data;
     }
+    static function getAD_PERFORMANCE_REPORT(SuspensionReason $r) {
+        $body = self::getAdsArray($r);
+
+        $response = self::request( "https://api.direct.yandex.com/json/v5/reports",
+            $body
+        );
+
+        if(!$response->successful() || !$response->body()) throw new Exception(  'getReport: отчет формируется!' )    ;;
+
+        $data = [];
+        $rows = explode( "\n", $response->body());
+        foreach( $rows as  $row) {
+            $data[] = explode( "\t", $row)[0];
+        }
+        array_shift($data);
+        array_shift($data);
+        array_pop($data);
+        array_pop($data);
+
+dd($data);
+        return $data;
+    }
 
 
+
+    /*
+     * Не более 10 000 объявлений в одном вызове метода.
+     */
     static function SuspendAd( & $adIds ) {
         $data = [ "method"=> "suspend",
             "params" => [
@@ -154,8 +180,7 @@ class APIRequest
                 ]
             ]
         ];
-        $body = self::getBadAdsArray();
-        $response = self::request( "https://api.direct.yandex.com/json/v5/ads",
+         $response = self::request( "https://api.direct.yandex.com/json/v5/ads",
             $data
         );
 
@@ -178,8 +203,8 @@ class APIRequest
     }
 
 
-    static function getBadAdsArray() {
-      // TODO переделать LAST_30_DAYS_ на последовательную обработку , например обработали предпоследнюю неделю, больше ее обрабатывать не надо.
+    static function getBadAdsArray( ) {
+        // TODO переделать LAST_30_DAYS_ на последовательную обработку , например обработали предпоследнюю неделю, больше ее обрабатывать не надо.
         $reportName = 'BounceRate80+Conversions0+20Impressions+LAST_30_DAYS_' . Carbon::now()->toDateString();
         return array (
             'params' =>
@@ -229,12 +254,12 @@ class APIRequest
                     'FieldNames' =>
                         array (
                             0 => 'AdId',
-              /*              1 => 'Impressions',
-                            2 => 'CampaignId',
-                            3 => 'Clicks',
-                            4 => 'Cost',
-                            5 => 'BounceRate',
-                            6 => 'Conversions',*/
+                            /*              1 => 'Impressions',
+                                          2 => 'CampaignId',
+                                          3 => 'Clicks',
+                                          4 => 'Cost',
+                                          5 => 'BounceRate',
+                                          6 => 'Conversions',*/
                         ),
                     'ReportName' => $reportName,
                     'ReportType' => 'AD_PERFORMANCE_REPORT',
@@ -242,6 +267,40 @@ class APIRequest
                     'IncludeVAT' => 'YES',
                     'IncludeDiscount' => 'YES',
                     'DateRangeType' => 'LAST_30_DAYS',
+                ),
+        );
+
+    }
+    static function getAdsArray(SuspensionReason $r) {
+        $reportName =  $r->report_name . '_' . $r->DateRangeType . '_' . Carbon::now()->toDateString();
+
+        $filter =  json_decode($r->report_conditions_json);
+        if(!$filter) throw new Exception('report_conditions_json is not parsable');
+
+        return array (
+            'params' =>
+                array (
+                    'SelectionCriteria' =>
+                        array (
+                            'Filter' =>
+                                $filter,
+                        ),
+                    'FieldNames' =>
+                        array (
+                            0 => 'AdId',
+                            /*              1 => 'Impressions',
+                                          2 => 'CampaignId',
+                                          3 => 'Clicks',
+                                          4 => 'Cost',
+                                          5 => 'BounceRate',
+                                          6 => 'Conversions',*/
+                        ),
+                    'ReportName' => $reportName,
+                    'ReportType' => 'AD_PERFORMANCE_REPORT',
+                    'Format' => 'TSV',
+                    'IncludeVAT' => 'YES',
+                    'IncludeDiscount' => 'YES',
+                    'DateRangeType' => $r->DateRangeType,
                 ),
         );
 
@@ -278,4 +337,16 @@ class APIRequest
 
 
     }
+
+
+
+
+
+
+
+
+
+
+
+
 }

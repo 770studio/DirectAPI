@@ -6,15 +6,17 @@ namespace App\YDAPI;
 
 
 use  Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class YDAPI
 {
 
 
-    public $TrafficVolume = 10; // TODO тянуть из бд
+    public $TrafficVolume = 10; //
     public $min_delta = 2000000; // 2 руб
     private $keywords_update = [];
+    public $account;
 
     //
 
@@ -22,6 +24,7 @@ class YDAPI
     public function __construct( & $account)
     {
 
+        $this->account = & $account;
         APIRequest::setAccount( $account );
 
     }
@@ -45,11 +48,17 @@ class YDAPI
 
         $n = new self ( $account);
 
-        $ads  = APIRequest::FindBadAds();
-        Log::channel('chrono')->info('Получили adIds'   );
-        APIRequest::SuspendAd( $ads );
+        $reports = $n->processReports() ;
+
         Log::channel('chrono')->info('Закончили AdCleaning'   );
 
+
+        /*
+                $ads  = APIRequest::FindBadAds();
+                Log::channel('chrono')->info('Получили adIds'   );
+                APIRequest::SuspendAd( $ads );
+                Log::channel('chrono')->info('Закончили AdCleaning'   );
+        */
 
 
 
@@ -255,5 +264,135 @@ class YDAPI
 
     }
 
+    private function processReports() {
 
+
+        // TODO severity на уровне кампаний , а не аккаунта
+        // чтобы взять отчеты , посмотрим какие отчеты применимы для аккаунта
+        $reasons =  [];
+
+        //TODO логика или cleaning_severity или severity_tag , реализовать и или
+        if($this->account->cleaning_severity) {
+            $reasons = SuspensionReason::where('severity', '<=', $this->account->cleaning_severity )->get();
+        } elseif($this->account->severity_tag) {
+            $reasons = SuspensionReason::whereIn('severity_tag',  explode(',', $this->account->severity_tag ) )->get();
+        }
+
+
+        $suspend = $suspendAdIds = [];
+
+        // по каждому комплексу условий свой отчет
+        foreach($reasons as $reason) {
+
+
+            try {
+                $report = APIRequest::getAD_PERFORMANCE_REPORT( $reason );
+                Log::channel('chrono')->info('Получили отчет:' . $reason->report_name   );
+
+
+            } catch (Exception $e) {
+                //  возможно отчет формируется ...
+                Log::channel('chrono')->info($e->getMessage()  );
+                continue; // к следующему отчету
+            }
+
+
+            // в  зависимости от типа мер приостановка или уменьшение ставки
+
+            switch($reason->type) {
+                case 'suspend':
+
+                    Log::channel('chrono')->info('Отчет содержит объявления на остановку: suspend'   );
+
+                    foreach($report as $ad_id) {
+                        $suspend[] = ['ad_id' => $ad_id, 'suspended' => 1, 'reason_id' => $reason->id ];
+                        $suspendAdIds[] = $ad_id;
+                    }
+
+
+                    break;
+                case 'cut_down2':
+                     Log::channel('chrono')->info('Отчет содержит объявления на понижение ставки: cut_down2'   );
+                    // для того , чтоб зафиксировать cut_down2 , просто добавим или обновим запись в бд
+                     foreach($report as $ad_id) {
+                            AdsStatus::updateOrCreate(
+                                ['ad_id' => $ad_id ],
+                                ['ad_id' => $ad_id, 'suspended' => 0, 'reason_id' => $reason->id ]
+                            );
+
+
+                    }
+
+                    break;
+
+            }
+
+
+
+
+
+
+        } // foreach
+
+        Log::channel('chrono')->info('Закончили Cut Down'   );
+
+
+        if($suspend) {
+            // есть  на удаление
+            try {
+                Log::channel('chrono')->info(count($suspend) . 'объявлений на остановку, - остонавливаем'   );
+                APIRequest::SuspendAd(   $suspendAdIds  ) ; // collect($suspend)->pluck('ad_id')->all()
+
+                foreach ( $suspend as $row ) {
+                    AdsStatus::updateOrCreate(
+                        ['ad_id' => $row['ad_id'] ],
+                        $row
+                    );
+                }
+
+
+
+
+
+
+
+
+                /*
+                $existed = AdsStatus::select('ad_id')->whereIn('ad_id', $suspend );
+                $existedAdIds = $existed->get()->pluck('ad_id')->toArray();
+                if($existedAdIds) {
+                    $existed->update(['suspended'=> 1 ]);
+                    $insertIds = array_diff($suspend, $existedAdIds );
+                } else $insertIds = $suspend;
+
+
+
+                try{
+                    AdsStatus::insert($data);
+
+                }  catch (Exception $e) {
+
+                    if($e->getCode() == '2300 ') {
+                        // Duplicate entry
+                    }
+                    dump(
+
+                        $e->getMessage());
+                }
+ */
+
+
+                Log::channel('chrono')->info('Закончили Suspending'   );
+
+            }
+            catch (Exception $e) {
+                //
+                Log::channel('chrono')->info($e->getMessage()  );
+
+            }
+
+        }
+
+
+    }
 }
