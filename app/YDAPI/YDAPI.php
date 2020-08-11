@@ -91,7 +91,6 @@ class YDAPI
 
         $bids =   APIRequest::getKeywordBids($cIds )  ;
 
-        dd($bids);
         Log::channel('chrono')->info('получили ставки');
 
 
